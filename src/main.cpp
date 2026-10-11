@@ -27,6 +27,14 @@ const unsigned long FADE_DELAY_MS = 20; // time between updates
 // How long to wait for WiFi at startup
 const unsigned long WIFI_TIMEOUT_MS = 15000;
 
+// Onboard BOOT button (GPIO 0, reads LOW when pressed)
+const int BUTTON_PIN = 0;
+const unsigned long DEBOUNCE_MS = 50;
+
+bool lastButtonReading = HIGH;
+bool buttonState = HIGH;
+unsigned long lastButtonChange = 0;
+
 bool fading = false;
 int brightness = 0;
 int fadeDirection = 1; // 1 = getting brighter, -1 = getting dimmer
@@ -129,6 +137,42 @@ void ledSetLevel(int value)
   setBrightness(brightness);
 }
 
+// turn the LED off if it is lit or fading, otherwise turn it on
+void ledToggle()
+{
+  if (fading || brightness > 0)
+  {
+    ledOff();
+    Serial.println("LED OFF (button)");
+  }
+  else
+  {
+    ledOn();
+    Serial.println("LED ON (button)");
+  }
+}
+
+// debounced button check: toggles the LED once per press
+void checkButton()
+{
+  bool reading = digitalRead(BUTTON_PIN);
+
+  if (reading != lastButtonReading)
+  {
+    lastButtonChange = millis();
+    lastButtonReading = reading;
+  }
+
+  if (millis() - lastButtonChange >= DEBOUNCE_MS && reading != buttonState)
+  {
+    buttonState = reading;
+    if (buttonState == LOW)
+    {
+      ledToggle();
+    }
+  }
+}
+
 // current state as JSON for the web page
 void sendStatus()
 {
@@ -198,16 +242,21 @@ void setup()
   ledcAttachPin(LED_PIN, 0);
 #endif
 
+  // BOOT button has an external pull-up, but enable the internal one too
+  pinMode(BUTTON_PIN, INPUT_PULLUP);
+
   Serial.println("Hello! Board started.");
   connectWiFi();
   setupWebServer();
-  Serial.println("Type 'on', 'off' or 'fade' and press Enter.");
+  Serial.println("Type 'on', 'off' or 'fade' and press Enter, or press the BOOT button to toggle.");
 }
 
 void loop()
 {
   // answer any browser requests
   server.handleClient();
+
+  checkButton();
 
   // only do something when the user has typed something
   if (Serial.available() > 0)
