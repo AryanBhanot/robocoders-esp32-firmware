@@ -1,32 +1,30 @@
 /**
  * Blink
  *
- * Turns on an LED on for one second,
- * then off for one second, repeatedly.
+ * Turns on an external LED on pin 9 for two seconds,
+ * then off for two seconds, repeatedly.
  */
 #include <Arduino.h>
 
-// Set LED_BUILTIN if it is not defined by Arduino framework
-#ifndef LED_BUILTIN
-#define LED_BUILTIN 48  // Default RGB LED on ESP32-S3-DevKitC-1
-#endif
+// External LED connected to GPIO 9
+const int LED_PIN = 9;
 
 void setup()
 {
   // initialize LED digital pin as an output.
-  pinMode(LED_BUILTIN, OUTPUT);
+  pinMode(LED_PIN, OUTPUT);
 }
 
 void loop()
 {
   // turn the LED on (HIGH is the voltage level)
-  digitalWrite(LED_BUILTIN, HIGH);
+  digitalWrite(LED_PIN, HIGH);
 
   // wait for two seconds
   delay(2000);
 
   // turn the LED off by making the voltage LOW
-  digitalWrite(LED_BUILTIN, LOW);
+  digitalWrite(LED_PIN, LOW);
 
   // wait for two seconds
   delay(2000);
