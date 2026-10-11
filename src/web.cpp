@@ -2,6 +2,7 @@
 #include <WiFi.h>
 #include <WebServer.h>
 #include <ESPmDNS.h>
+#include <ArduinoOTA.h>
 #include "web.h"
 #include "web_page.h"
 #include "led.h"
@@ -44,6 +45,17 @@ static void setupRoutes()
   server.begin();
 }
 
+// allow firmware uploads over WiFi (password comes from secrets.ini)
+static void setupOta()
+{
+  ArduinoOTA.setHostname(HOSTNAME);
+  ArduinoOTA.setPassword(OTA_PASSWORD);
+  ArduinoOTA.onStart([]() { Serial.println("OTA update starting..."); });
+  ArduinoOTA.onEnd([]() { Serial.println("OTA update done, rebooting."); });
+  ArduinoOTA.onError([](ota_error_t error) { Serial.printf("OTA error %u\n", error); });
+  ArduinoOTA.begin();
+}
+
 static bool connectWiFi()
 {
   Serial.print("Connecting to WiFi");
@@ -78,6 +90,7 @@ void webBegin()
   }
 
   setupRoutes();
+  setupOta();
 
   if (nameOk)
   {
@@ -91,5 +104,6 @@ void webBegin()
 
 void webUpdate()
 {
+  ArduinoOTA.handle();
   server.handleClient();
 }
