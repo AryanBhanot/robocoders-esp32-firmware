@@ -1,12 +1,15 @@
 #include <Arduino.h>
 #include "led.h"
 
-// External LED connected to GPIO 9
-static const int LED_PIN = 9;
+// Onboard WS2812 RGB LED (GPIO 48 on DevKitC-1 v1.0, GPIO 38 on v1.1).
+// RGB_BUILTIN comes from the board definition; fall back to 48.
+#ifdef RGB_BUILTIN
+static const int LED_PIN = RGB_BUILTIN;
+#else
+static const int LED_PIN = 48;
+#endif
 
-// PWM settings (8-bit: brightness 0-255)
-static const int PWM_FREQ = 5000;
-static const int PWM_RESOLUTION = 8;
+// brightness range 0-255
 static const int PWM_MAX = 255;
 
 // Fade settings
@@ -18,24 +21,15 @@ static int brightness = 0;
 static int fadeDirection = 1; // 1 = getting brighter, -1 = getting dimmer
 static unsigned long lastFadeUpdate = 0;
 
-// write brightness (0-255) to the pin, works with Arduino-ESP32 core 2.x and 3.x
+// write brightness (0-255) to the onboard RGB LED as white
 static void writeBrightness(int value)
 {
-#if ESP_ARDUINO_VERSION_MAJOR >= 3
-  ledcWrite(LED_PIN, value);
-#else
-  ledcWrite(0, value);
-#endif
+  neopixelWrite(LED_PIN, value, value, value);
 }
 
 void ledBegin()
 {
-#if ESP_ARDUINO_VERSION_MAJOR >= 3
-  ledcAttach(LED_PIN, PWM_FREQ, PWM_RESOLUTION);
-#else
-  ledcSetup(0, PWM_FREQ, PWM_RESOLUTION);
-  ledcAttachPin(LED_PIN, 0);
-#endif
+  writeBrightness(0);
 }
 
 void ledUpdate()
