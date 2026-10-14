@@ -12,6 +12,7 @@
 #include "led.h"
 #include "button.h"
 #include "web.h"
+#include "robot.h"
 
 // handle one typed line from the Serial Monitor
 static void handleSerialCommand()
@@ -24,6 +25,13 @@ static void handleSerialCommand()
   // read the whole line and clean it up (remove spaces/newlines, make lowercase)
   String command = Serial.readStringUntil('\n');
   command.trim();
+
+  // Robocoders protocol lines (HELLO, DW, PWM, ...) go to the robot module
+  if (robotHandleLine(command, LINK_USB))
+  {
+    return;
+  }
+
   command.toLowerCase();
 
   if (command == "on")
@@ -59,12 +67,14 @@ void setup()
 
   Serial.println("Hello! Board started.");
   webBegin();
+  robotBegin();
   Serial.println("Type 'on', 'off' or 'fade' and press Enter, or press the BOOT button to toggle.");
 }
 
 void loop()
 {
   webUpdate();
+  robotUpdate();
   buttonUpdate();
   handleSerialCommand();
   ledUpdate();

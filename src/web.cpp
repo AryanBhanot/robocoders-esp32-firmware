@@ -6,6 +6,7 @@
 #include "web.h"
 #include "web_page.h"
 #include "led.h"
+#include "robot.h"
 #include "secrets.h"
 
 // the board is reachable at http://<HOSTNAME>.local
@@ -15,6 +16,11 @@ static const char *HOSTNAME = "ledboard";
 static const unsigned long WIFI_TIMEOUT_MS = 15000;
 
 static WebServer server(80);
+
+const char *webHostname()
+{
+  return HOSTNAME;
+}
 
 // current state as JSON for the web page
 static void sendStatus()
@@ -50,7 +56,10 @@ static void setupOta()
 {
   ArduinoOTA.setHostname(HOSTNAME);
   ArduinoOTA.setPassword(OTA_PASSWORD);
-  ArduinoOTA.onStart([]() { Serial.println("OTA update starting..."); });
+  ArduinoOTA.onStart([]() {
+    robotStopAll();
+    Serial.println("OTA update starting...");
+  });
   ArduinoOTA.onEnd([]() { Serial.println("OTA update done, rebooting."); });
   ArduinoOTA.onError([](ota_error_t error) { Serial.printf("OTA error %u\n", error); });
   ArduinoOTA.begin();
@@ -62,6 +71,7 @@ static bool connectWiFi()
   WiFi.mode(WIFI_STA);
   WiFi.setHostname(HOSTNAME);
   WiFi.setAutoReconnect(true);
+  WiFi.setSleep(false); // modem sleep adds latency and trips the failsafe
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
 
   unsigned long start = millis();
@@ -87,6 +97,7 @@ void webBegin()
   if (nameOk)
   {
     MDNS.addService("http", "tcp", 80);
+    MDNS.addService("ws", "tcp", 81);
   }
 
   setupRoutes();
